@@ -1,25 +1,39 @@
-// ASYNC studies
 
+/*
+    PROMISES
 
-function getUser(callback) {
-    setTimeout(function () {
-        return callback(null,{
-            id: 1,
-            name: 'John Doe',
-            email: 'upchh@example.com',
-            phone: '1234567890',
-            address: '123 Main Street',
-            birthday: new Date()
-        })
-    }, 5000);
+    PENDING: Initial state. Not finished and not rejected yet.
+    FULFILLED: Conclused.
+    REJECTED: Rejected.
+*/
+
+const util = require('util');
+const getAddressAsync = util.promisify(getAddressByUserId)
+
+function getUser() {
+    return new Promise((resolve, reject) => {
+        setTimeout(function () {
+            return resolve({
+                id: 1,
+                name: 'John Doe',
+                email: 'upchh@example.com',
+                phone: '1234567890',
+                address: '123 Main Street',
+                birthday: new Date()
+            })
+        }, 1000);
+        // return reject(new Error('User not found'))
+    })
 }
 
-function getPhoneByUserId(userId, callback) {
-    setTimeout(function () {
-        return callback(null, {
-            phone: '1234567890'
-        })
-    }, 1000)
+function getPhoneByUserId(userId) {
+    return new Promise((resolve, reject) => {
+        setTimeout(function () {
+            return resolve({
+                phone: '1234567890'
+            })
+        }, 1000);
+    })
 }
 
 function getAddressByUserId(userId, callback) {
@@ -30,22 +44,31 @@ function getAddressByUserId(userId, callback) {
     }, 4000)
 }
 
-getUser((error, user) => {
-    if (error) {
-        console.log("(USER) Error: " + error)
-        return;
-    }
-    getPhoneByUserId(user.id, function resolvePhone(error1, phone) {
-        if (error1) {
-            console.error("(PHONE) Error: " + error1)
-            return;   
-        }
-        getAddressByUserId(user.id, function resolveAddress(error2, address) {
-            if (error2) {
-                console.error("(ADDRESS) Error: " + error2)
-                return;
+
+
+getUser()
+    .then((user) => {
+        return getPhoneByUserId(user.id).then((result) => {
+            return {
+                user,
+                phone: result.phone
             }
-        console.log(`User: ${user.name} - Phone: ${phone.phone} - Address: ${address.address}`)
-        })
+        });
     })
-});
+    .then((result) => {
+        const address = getAddressAsync(result.user.id);
+        return address.then((resultAddress) => {
+            return {
+                user: result.user,
+                phone: result.phone,
+                address: resultAddress.address
+            }
+        });
+    })
+    .then((result) => {
+        console.log(result);
+    })
+    .catch((error) => {
+        console.log("Bad: " + error);
+})
+ 
